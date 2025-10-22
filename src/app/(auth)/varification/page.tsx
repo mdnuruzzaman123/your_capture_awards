@@ -1,17 +1,12 @@
-import Verification from "@/components/auth/Verification";
-import { Metadata } from "next";
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "verify",
-  description: "User verify page",
+  title: 'verify',
+  description: 'User verify page',
 };
 
 const VerificationPage = () => {
-  return (
-    <>
-      <Verification />
-    </>
-  );
+  return <>VerificationPage</>;
 };
 
 export default VerificationPage;
