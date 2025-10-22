@@ -301,7 +301,7 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
           <>
             New here?{' '}
             <Link href="/signup" className="text-primary font-semibold">
-              Create your Capture Award
+              Create Your Capture Awards Account
             </Link>
           </>
         ) : (
