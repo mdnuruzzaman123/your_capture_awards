@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Kumbh_Sans } from 'next/font/google';
 import '../styles/globals.css';
 import { Providers } from '@/providers/ReduxProvider';
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -52,7 +53,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${kumbhSans.variable} anti-aliased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          {children} <Toaster expand={true} richColors closeButton />
+        </Providers>
       </body>
     </html>
   );

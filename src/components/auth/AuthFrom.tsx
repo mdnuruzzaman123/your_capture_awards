@@ -1,91 +1,100 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import FormField from './FormField';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import Link from 'next/link';
 import { FaGoogle, FaFacebookF } from 'react-icons/fa';
 import { IoCheckbox, IoCheckboxOutline } from 'react-icons/io5';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { useSigninMutation, useSignupMutation } from '@/store/features/auth/authApi';
-import { toast } from 'sonner';
-import Link from 'next/link';
 import LogoName from '../LogoName';
+import FormField from './FormField';
+import { SigninFormData, signinSchema, SignupFormData, signupSchema } from '@/lib/authSchema';
+import { useRouter } from 'next/navigation';
 
 const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const [signin, { isLoading: isLoginLoading }] = useSigninMutation();
-  const [signup, { isLoading: isRegisterLoading }] = useSignupMutation();
+  const router = useRouter();
+  const [signin, { isLoading: isSigninLoading }] = useSigninMutation();
+  const [signup, { isLoading: isSignupLoading }] = useSignupMutation();
 
-  // Manual Login/Register handler
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget as HTMLFormElement;
-    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-    const confirmPassword = (form.elements?.namedItem('confirmPassword') as HTMLInputElement).value;
-    const firstName = (form.elements?.namedItem('firstName') as HTMLInputElement)?.value;
-    const lastName = (form.elements?.namedItem('lastName') as HTMLInputElement)?.value;
-    const phone = (form.elements?.namedItem('phone') as HTMLInputElement)?.value;
+  const signinForm = useForm<SigninFormData>({
+    resolver: zodResolver(signinSchema),
+  });
 
+  const signupForm = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+  });
+
+  const signInSubmit = async (data: SigninFormData) => {
     try {
-      if (type === 'signin') {
-        await signin({ email, password }).unwrap();
-
-        toast.success('Login Successful', {});
-      } else {
-        await signup({ email, firstName, lastName, phone, password, confirmPassword }).unwrap();
-
-        toast.success('Account Created', {
-          description: 'You can now log in with your new account.',
-        });
-      }
+      await signin({ email: data?.email, password: data?.password }).unwrap();
+      toast.success('Login Successful', {
+        description: 'Welcome back!',
+      });
+      signinForm.reset();
+      router.push('/');
     } catch (err: any) {
       toast.error('Oops! Something went wrong', {
         description:
           err?.data?.message || err?.error || 'Please check your credentials and try again.',
       });
-    } finally {
-      // form.reset();
     }
   };
 
-  // Google/GitHub login handler
-  const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
+  const signUpSubmit = async (data: SignupFormData) => {
     try {
-      // await signIn(provider, { redirect: false });
-      // if (res?.error) {
-      //   toast.error(res.error);
-      //   return;
-      // }
-      // const token = res?.token;
-      // const user = res?.user;
-      // if (token) {
-      //   dispatch(setToken(token));
-      //   dispatch(setUser(user));
-      //   Cookies.set("token", token, {
-      //     expires: 7,
-      //     secure: true,
-      //     sameSite: "Strict",
-      //   });
-      // }
+      await signup({
+        email: data?.email,
+        firstName: data?.firstName,
+        lastName: data?.lastName,
+        phone: data?.phone,
+        password: data?.password,
+        confirmPassword: data?.confirmPassword,
+      }).unwrap();
+      toast.success('Account Created', {
+        description: 'You can now log in with your new account.',
+      });
+      signupForm.reset();
+      router.push('/');
     } catch (err: any) {
-      toast.error(err?.message || 'Something went wrong!');
+      toast.error('Oops! Something went wrong', {
+        description:
+          err?.data?.message || err?.error || 'Please check your credentials and try again.',
+      });
     }
   };
 
-  // Render Signin Form
+  const handleOAuthLogin = (provider: 'google' | 'facebook') => {
+    toast.info(`${provider.toUpperCase()} login coming soon 🚀`);
+  };
+
+  // Signin Form
   const renderSigninForm = () => (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <FormField label="Email" id="email" type="email" placeholder="Enter your email" required />
+    <form onSubmit={signinForm.handleSubmit(signInSubmit)} className="flex flex-col gap-3">
+      <FormField<SigninFormData>
+        label="Email"
+        id="email"
+        type="email"
+        placeholder="Enter your email"
+        required
+        register={signinForm.register}
+        error={signinForm.formState.errors.email?.message as string}
+      />
       <div className="relative">
-        <FormField
+        <FormField<SigninFormData>
           label="Password"
           id="password"
           type={showPass ? 'text' : 'password'}
           placeholder="Enter your password"
           required
+          register={signinForm.register}
+          error={signinForm.formState.errors.password?.message as string}
         />
         <button
           type="button"
@@ -110,6 +119,7 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
           )}
         </button>
       </div>
+
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -120,7 +130,7 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
             <IoCheckbox className="text-primary size-6" />
           ) : (
             <IoCheckboxOutline className="text-primary size-6" />
-          )}{' '}
+          )}
           Remember Me
         </button>
         <button type="button" className="text-sm font-medium text-gray-100 hover:underline">
@@ -130,47 +140,63 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
 
       <button
         type="submit"
-        // disabled={isLoginLoading}
+        disabled={isSigninLoading}
         className="bg-primary hover:bg-primary/90 disabled:hover:bg-primary mt-4 w-full rounded-sm py-[9px] text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {/* {isLoginLoading ? "Login in..." : "Login"} */} Sign In
+        {isSigninLoading ? 'Signing in...' : 'Sign In'}
       </button>
     </form>
   );
 
-  // Render Signup Form
+  // 🔹 Signup Form
   const renderSignupForm = () => (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <FormField
+    <form onSubmit={signupForm.handleSubmit(signUpSubmit)} className="flex flex-col gap-3">
+      <FormField<SignupFormData>
         label="First Name"
         id="firstName"
         type="text"
         placeholder="Enter your first name"
         required
+        register={signupForm.register}
+        error={signupForm.formState.errors.firstName?.message}
       />
-      <FormField
+      <FormField<SignupFormData>
         label="Last Name"
         id="lastName"
         type="text"
         placeholder="Enter your last name"
         required
+        register={signupForm.register}
+        error={signupForm.formState.errors.lastName?.message}
       />
-      <FormField label="Email" id="email" type="email" placeholder="Enter your email" required />
-      <FormField
+      <FormField<SignupFormData>
+        label="Email"
+        id="email"
+        type="email"
+        placeholder="Enter your email"
+        required
+        register={signupForm.register}
+        error={signupForm.formState.errors.email?.message as string}
+      />
+      <FormField<SignupFormData>
         label="Contact Number"
         id="phone"
         type="tel"
         placeholder="Enter your contact number"
         required
+        register={signupForm.register}
+        error={signupForm.formState.errors.phone?.message}
       />
 
       <div className="relative">
-        <FormField
+        <FormField<SignupFormData>
           label="Password"
           id="password"
           type={showPass ? 'text' : 'password'}
           placeholder="Enter your password"
           required
+          register={signupForm.register}
+          error={signupForm.formState.errors.password?.message as string}
         />
         <button
           type="button"
@@ -197,12 +223,14 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
       </div>
 
       <div className="relative">
-        <FormField
+        <FormField<SignupFormData>
           label="Confirm Password"
           id="confirmPassword"
           type={showConfirmPass ? 'text' : 'password'}
           placeholder="Confirm your password"
           required
+          register={signupForm.register}
+          error={signupForm.formState.errors.confirmPassword?.message}
         />
         <button
           type="button"
@@ -230,11 +258,10 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
 
       <button
         type="submit"
-        disabled={isRegisterLoading}
+        disabled={isSignupLoading}
         className="bg-primary hover:bg-primary/90 disabled:hover:bg-primary w-full rounded-sm py-[9px] text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {/* {isLoginLoading ? "Registering..." : "Register"} */}
-        Sign Up
+        {isSignupLoading ? 'Creating account...' : 'Sign Up'}
       </button>
     </form>
   );
@@ -244,7 +271,7 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
       <header className="flex flex-col items-center space-y-2 text-center">
         <LogoName />
         <h1 className="font-rubik mt-16 mb-10 text-3xl font-medium">
-          {type === 'signin' ? 'Great to have you back !' : 'Great to have you here !'}
+          {type === 'signin' ? 'Great to have you back!' : 'Great to have you here!'}
         </h1>
         <div className="font-kumbh w-full space-y-6 font-light">
           <button
@@ -274,7 +301,7 @@ const AuthForm = ({ type = 'signin' }: { type: 'signin' | 'signup' }) => {
           <>
             New here?{' '}
             <Link href="/signup" className="text-primary font-semibold">
-              Create a your capture Award
+              Create your Capture Award
             </Link>
           </>
         ) : (

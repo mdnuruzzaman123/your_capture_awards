@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/utils/cn';
-import { FieldErrors, FieldValues, Path, UseFormRegister } from 'react-hook-form';
+import { FieldValues, Path, UseFormRegister } from 'react-hook-form';
 
 interface InputProps<TFormValues extends FieldValues> {
   label: string;
@@ -10,7 +10,7 @@ interface InputProps<TFormValues extends FieldValues> {
   placeholder?: string;
   required?: boolean;
   register?: UseFormRegister<TFormValues>;
-  errors?: FieldErrors<TFormValues>;
+  error?: string;
 }
 
 function FormField<TFormValues extends FieldValues>({
@@ -20,10 +20,8 @@ function FormField<TFormValues extends FieldValues>({
   placeholder,
   required = false,
   register,
-  errors,
+  error,
 }: InputProps<TFormValues>) {
-  const errorMessage = errors?.[id]?.message as string | undefined;
-
   return (
     <div className="mb-4">
       <label htmlFor={id as string} className="mb-1 block text-sm font-medium">
@@ -36,11 +34,11 @@ function FormField<TFormValues extends FieldValues>({
         required={required}
         {...(register ? register(id) : {})}
         className={cn(
-          'focus:ring-primary h-[50px] w-full rounded-sm border border-neutral-200 px-3 text-sm shadow-2xs outline-none focus:border-transparent focus:ring-2',
-          errorMessage && 'border-destructive focus:ring-destructive',
+          'focus:ring-primary h-[50px] w-full rounded-sm border px-3 text-sm shadow-2xs outline-none focus:border-transparent focus:ring-2',
+          error && 'border-destructive focus:ring-destructive',
         )}
       />
-      {errorMessage && <p className="text-destructive mt-1 text-xs">{errorMessage}</p>}
+      {error && <p className="text-destructive mt-1 text-xs">{error}</p>}
     </div>
   );
 }
